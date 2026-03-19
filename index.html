@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindSprint — Online Quiz System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0c10;--bg2:#13141a;--bg3:#1c1d25;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --accent:#e8ff47;--accent2:#47b4ff;--accent3:#ff6b6b;
+  --text:#f0f0f0;--muted:#6b6d7a;--muted2:#9093a4;
+  --success:#4ade80;--warn:#fb923c;
+  --radius:14px;--radius-sm:10px;
+  --fh:'Syne',sans-serif;--fb:'DM Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 2rem;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:100}
+.logo{font-family:var(--fh);font-size:1.3rem;font-weight:800;letter-spacing:-0.03em}
+.logo span{color:var(--accent)}
+.nav-r{display:flex;gap:10px;align-items:center}
+.nav-user{font-size:13px;color:var(--muted)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:8px;font-family:var(--fb);font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .18s ease}
+.btn-y{background:var(--accent);color:#0b0c10}.btn-y:hover{background:#d4eb2f;transform:translateY(-1px)}
+.btn-b{background:var(--accent2);color:#0b0c10}.btn-b:hover{background:#2da0f0;transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--border2);background:var(--bg3)}
+.btn-red{background:rgba(255,107,107,.15);color:var(--accent3);border:1px solid rgba(255,107,107,.25)}.btn-red:hover{background:rgba(255,107,107,.25)}
+.btn-sm{padding:6px 14px;font-size:13px}
+.btn-lg{padding:13px 32px;font-size:16px;border-radius:10px}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
+.w-full{width:100%}
+
+/* LANDING */
+#landing{background:var(--bg);background-image:radial-gradient(ellipse 60% 50% at 70% 20%,rgba(232,255,71,.09) 0%,transparent 60%),radial-gradient(ellipse 40% 60% at 20% 80%,rgba(71,180,255,.07) 0%,transparent 60%)}
+.hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5rem 2rem 3rem}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(232,255,71,.1);border:1px solid rgba(232,255,71,.22);color:var(--accent);font-size:12px;font-weight:600;padding:5px 16px;border-radius:100px;margin-bottom:1.8rem;letter-spacing:.06em}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 2s ease infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.hero h1{font-family:var(--fh);font-size:clamp(3rem,7vw,5.2rem);font-weight:800;letter-spacing:-.04em;line-height:1.02;margin-bottom:1.3rem}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p{font-size:1.05rem;color:var(--muted2);max-width:480px;margin-bottom:2.8rem;line-height:1.7}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.feat-strip{display:flex;border-top:1px solid var(--border);margin-top:auto}
+.feat{flex:1;padding:1.4rem 1.2rem;border-right:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.feat:last-child{border-right:none}
+.feat-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.feat-ic.y{background:rgba(232,255,71,.12)}
+.feat-ic.b{background:rgba(71,180,255,.12)}
+.feat-ic.g{background:rgba(74,222,128,.12)}
+.feat-ic.o{background:rgba(251,146,60,.12)}
+.feat-title{font-size:13px;font-weight:700;margin-bottom:1px}
+.feat-sub{font-size:11px;color:var(--muted)}
+
+/* AUTH SHARED */
+.auth-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}
+.auth-card{width:100%;max-width:430px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:2.5rem;position:relative}
+.auth-card.admin-card{border-color:rgba(71,180,255,.3);background-image:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(71,180,255,.04) 0%,transparent 70%)}
+.auth-card h2{font-family:var(--fh);font-size:1.7rem;font-weight:800;margin-bottom:.35rem;letter-spacing:-.02em}
+.auth-sub{color:var(--muted);font-size:14px;margin-bottom:1.8rem}
+.admin-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(71,180,255,.12);border:1px solid rgba(71,180,255,.3);color:var(--accent2);font-size:11px;font-weight:700;padding:4px 12px;border-radius:100px;margin-bottom:.9rem;letter-spacing:.06em}
+.auth-tabs{display:flex;margin-bottom:1.8rem;background:var(--bg3);border-radius:9px;padding:4px;gap:4px}
+.auth-tab{flex:1;padding:8px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;border:none;color:var(--muted);font-family:var(--fb);border-radius:6px;transition:all .15s}
+.auth-tab.active{background:var(--accent);color:#0b0c10}
+.auth-tab.active.admin-t{background:var(--accent2)}
+
+/* FORMS */
+.fg{margin-bottom:1rem}
+.fg label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px;letter-spacing:.04em;text-transform:uppercase}
+.iw{position:relative}
+.iw input,.fi{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:11px 40px 11px 14px;color:var(--text);font-family:var(--fb);font-size:14px;transition:border-color .15s,box-shadow .15s;outline:none}
+.fi{padding:11px 14px}
+.iw input:focus,.fi:focus{border-color:rgba(232,255,71,.45);box-shadow:0 0 0 3px rgba(232,255,71,.07)}
+.iw input:focus.admin-focus,.admin-card .iw input:focus{border-color:rgba(71,180,255,.45);box-shadow:0 0 0 3px rgba(71,180,255,.07)}
+.fs{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:11px 14px;color:var(--text);font-family:var(--fb);font-size:14px;outline:none}
+.fs option{background:var(--bg3)}
+.fta{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:11px 14px;color:var(--text);font-family:var(--fb);font-size:14px;outline:none;resize:vertical;min-height:70px;transition:border-color .15s}
+.fta:focus{border-color:rgba(232,255,71,.45)}
+.eye{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px;line-height:1;user-select:none;transition:color .15s}
+.eye:hover{color:var(--text)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:1rem;display:none;line-height:1.45}
+.alert.err{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);color:var(--accent3)}
+.alert.show{display:block}
+.lk-bar{height:3px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:5px}
+.lk-fill{height:100%;background:var(--accent3);transition:width .2s linear}
+.sec-note{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:1rem;justify-content:center}
+.sec-dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0}
+
+/* DASHBOARD */
+.dash{flex:1;padding:2rem;max-width:1110px;width:100%;margin:0 auto}
+.page-title{font-family:var(--fh);font-size:1.8rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.3rem}
+.page-sub{color:var(--muted);font-size:14px;margin-bottom:2rem}
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:2rem}
+.mc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem;position:relative;overflow:hidden;transition:border-color .2s}
+.mc:hover{border-color:var(--border2)}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.mc.y::before{background:var(--accent)}
+.mc.b::before{background:var(--accent2)}
+.mc.r::before{background:var(--accent3)}
+.mc.g::before{background:var(--success)}
+.mc-lbl{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.mc-val{font-family:var(--fh);font-size:2.2rem;font-weight:800;line-height:1}
+.sec-hd{font-family:var(--fh);font-size:1rem;font-weight:800;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;letter-spacing:-.01em}
+
+/* QUIZ CARDS */
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;margin-bottom:2rem}
+.qcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;display:flex;flex-direction:column;gap:10px;transition:all .2s;cursor:pointer;position:relative;overflow:hidden}
+.qcard::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(232,255,71,.04) 0%,transparent 60%);opacity:0;transition:opacity .2s;pointer-events:none}
+.qcard:hover{border-color:rgba(232,255,71,.35);transform:translateY(-2px);box-shadow:0 8px 28px rgba(232,255,71,.06)}
+.qcard:hover::after{opacity:1}
+.qcard-title{font-family:var(--fh);font-size:1.05rem;font-weight:800;line-height:1.3}
+.qcard-desc{font-size:13px;color:var(--muted2);line-height:1.5}
+.qcard-tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px}
+.tag.y{background:rgba(232,255,71,.12);color:var(--accent)}
+.tag.b{background:rgba(71,180,255,.12);color:var(--accent2)}
+.tag.g{background:rgba(74,222,128,.12);color:var(--success)}
+.tag.r{background:rgba(255,107,107,.12);color:var(--accent3)}
+.tag.d{background:var(--bg3);color:var(--muted)}
+
+/* LIST ITEMS */
+.li{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;transition:border-color .15s}
+.li:hover{border-color:var(--border2)}
+.li-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.li-info{flex:1;min-width:0}
+.li-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li-sub{font-size:12px;color:var(--muted)}
+.li-score{font-family:var(--fh);font-weight:800;font-size:1.1rem}
+.rank{font-family:var(--fh);font-size:1rem;font-weight:800;width:28px;text-align:center;flex-shrink:0}
+.rank.gold{color:#fbbf24}.rank.silver{color:#9ca3af}.rank.bronze{color:#b45309}
+
+/* ADMIN TABS */
+.atabs{display:flex;gap:4px;margin-bottom:2rem;background:var(--bg2);padding:4px;border-radius:12px;border:1px solid var(--border)}
+.atab{flex:1;padding:9px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;border:none;color:var(--muted);font-family:var(--fb);border-radius:9px;transition:all .15s}
+.atab.active{background:var(--accent);color:#0b0c10}
+.apanel{display:none}.apanel.active{display:block}
+.qrow{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1.2rem 1.4rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px;transition:border-color .15s}
+.qrow:hover{border-color:var(--border2)}
+.qrow-info{flex:1}.qrow-title{font-weight:700;margin-bottom:3px}.qrow-meta{font-size:12px;color:var(--muted)}
+.qrow-actions{display:flex;gap:8px;flex-shrink:0}
+
+/* QUIZ SCREEN */
+#quiz-screen{background:var(--bg);background-image:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(232,255,71,.04) 0%,transparent 60%)}
+.qcontent{flex:1;padding:2rem;max-width:760px;width:100%;margin:0 auto}
+.qhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:12px}
+.qhdr-info h2{font-family:var(--fh);font-size:1.2rem;font-weight:800}
+.qhdr-info p{color:var(--muted);font-size:13px}
+.timer{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:10px 18px;font-family:var(--fh);font-size:1.4rem;font-weight:800;flex-shrink:0}
+.timer.warn{border-color:rgba(251,146,60,.5);color:var(--warn)}
+.timer.danger{border-color:rgba(255,107,107,.5);color:var(--accent3);animation:tpulse .5s ease infinite alternate}
+@keyframes tpulse{from{opacity:1}to{opacity:.4}}
+.pbar{height:4px;background:var(--bg3);border-radius:4px;margin-bottom:2rem;overflow:hidden}
+.pfill{height:100%;background:var(--accent);border-radius:4px;transition:width .3s ease}
+.qbox{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:2rem}
+.qnum{font-size:12px;color:var(--muted);letter-spacing:.06em;margin-bottom:8px;text-transform:uppercase}
+.qtxt{font-size:1.15rem;font-weight:600;margin-bottom:1.5rem;line-height:1.55}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;cursor:pointer;transition:all .15s;user-select:none}
+.opt:hover{border-color:rgba(232,255,71,.3);background:rgba(232,255,71,.05)}
+.opt.sel{border-color:var(--accent);background:rgba(232,255,71,.1)}
+.opt-let{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:var(--bg2);font-size:12px;font-weight:700;flex-shrink:0;border:1px solid var(--border2)}
+.opt.sel .opt-let{background:var(--accent);color:#0b0c10;border-color:var(--accent)}
+.qnav{display:flex;gap:10px;justify-content:space-between;margin-top:1.5rem}
+
+/* RESULTS */
+#results-screen{align-items:center;justify-content:center;background:var(--bg);background-image:radial-gradient(ellipse 50% 50% at 50% 30%,rgba(74,222,128,.07) 0%,transparent 60%)}
+.res-box{max-width:560px;width:100%;padding:2rem;text-align:center;margin:auto}
+.score-ring{width:140px;height:140px;border-radius:50%;margin:0 auto 1.5rem;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid;font-family:var(--fh)}
+.score-ring.ex{border-color:var(--success);background:rgba(74,222,128,.08)}
+.score-ring.gd{border-color:var(--accent);background:rgba(232,255,71,.08)}
+.score-ring.av{border-color:var(--warn);background:rgba(251,146,60,.08)}
+.score-ring.po{border-color:var(--accent3);background:rgba(255,107,107,.08)}
+.score-pct{font-size:2.5rem;font-weight:800;line-height:1}
+.score-lbl{font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.res-title{font-family:var(--fh);font-size:2rem;font-weight:800;margin-bottom:.5rem;letter-spacing:-.02em}
+.res-sub{color:var(--muted);margin-bottom:2rem}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:2rem}
+.rs{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;text-align:left}
+.rs-lbl{font-size:12px;color:var(--muted);margin-bottom:4px}
+.rs-val{font-family:var(--fh);font-size:1.4rem;font-weight:800}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:2rem}
+.modal-ov.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:2rem;width:100%;max-width:640px;max-height:85vh;overflow-y:auto}
+.modal h3{font-family:var(--fh);font-size:1.3rem;font-weight:800;margin-bottom:1.5rem}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:1.5rem;border-top:1px solid var(--border);padding-top:1.5rem}
+.qb{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1.2rem;margin-bottom:12px}
+.qbh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.qbh span{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.qb-opts{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.qb-row{display:flex;align-items:center;gap:8px}
+.qb-row input[type="radio"]{accent-color:var(--accent);width:16px;height:16px;flex-shrink:0}
+.qb-opt{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--fb);font-size:13px;outline:none;transition:border-color .15s}
+.qb-opt:focus{border-color:rgba(232,255,71,.4)}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem}
+.cc h4{font-size:12px;font-weight:700;margin-bottom:1rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.empty{text-align:center;padding:3rem;color:var(--muted)}
+.empty .ei{font-size:2.5rem;margin-bottom:.8rem}
+.empty p{font-size:14px}
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 20px;font-size:14px;font-weight:500;transform:translateY(80px);opacity:0;transition:all .3s ease;pointer-events:none}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.ok{border-color:rgba(74,222,128,.4);color:var(--success)}
+#toast.err{border-color:rgba(255,107,107,.4);color:var(--accent3)}
+@media(max-width:600px){.agrid,.res-grid,.fr{grid-template-columns:1fr}.feat-strip{flex-wrap:wrap}.feat{min-width:50%}}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- ══════════ LANDING ══════════ -->
+<div id="landing" class="screen active">
+  <nav>
+    <div class="logo">Mind<span>Sprint</span></div>
+    <div class="nav-r">
+      <button class="btn btn-ghost btn-sm" onclick="goAuth('student')">Student Login</button>
+      <button class="btn btn-b btn-sm" onclick="goAuth('admin')">Admin Portal</button>
+    </div>
+  </nav>
+  <div class="hero">
+    <div class="hero-badge"><span class="badge-dot"></span>Online Quiz Platform</div>
+    <h1>Challenge Your<br><em>MindSprint</em></h1>
+    <p>Take timed quizzes, climb the leaderboard, and track your progress. All data stored securely in your browser.</p>
+    <div class="hero-ctas">
+      <button class="btn btn-y btn-lg" onclick="goAuth('student')">Take a Quiz</button>
+      <button class="btn btn-ghost btn-lg" onclick="goAuth('admin')">Admin Portal</button>
+    </div>
+  </div>
+  <div class="feat-strip">
+    <div class="feat"><div class="feat-ic y">⚡</div><div><div class="feat-title">Instant Scoring</div><div class="feat-sub">Auto-graded MCQ</div></div></div>
+    <div class="feat"><div class="feat-ic b">⏱</div><div><div class="feat-title">Timed Quizzes</div><div class="feat-sub">Race the clock</div></div></div>
+    <div class="feat"><div class="feat-ic g">🏆</div><div><div class="feat-title">Leaderboards</div><div class="feat-sub">Compete globally</div></div></div>
+    <div class="feat"><div class="feat-ic o">🔒</div><div><div class="feat-title">Secure Storage</div><div class="feat-sub">SHA-256 encrypted</div></div></div>
+  </div>
+</div>
+
+<!-- ══════════ STUDENT AUTH ══════════ -->
+<div id="auth-student" class="screen">
+  <nav>
+    <div class="logo">Mind<span>Sprint</span></div>
+    <div class="nav-r">
+      <button class="btn btn-ghost btn-sm" onclick="SS('landing')">← Home</button>
+      <button class="btn btn-b btn-sm" onclick="goAuth('admin')">Admin Portal</button>
+    </div>
+  </nav>
+  <div class="auth-wrap" style="background-image:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(232,255,71,.04) 0%,transparent 70%)">
+    <div class="auth-card">
+      <h2>Student Portal</h2>
+      <div class="auth-sub">Sign in or create a student account.</div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="st-li-tab" onclick="switchStudentTab('li')">Log In</button>
+        <button class="auth-tab" id="st-rg-tab" onclick="switchStudentTab('rg')">Register</button>
+      </div>
+      <!-- LOGIN -->
+      <div id="st-li">
+        <div class="alert err" id="st-li-alert"></div>
+        <div id="st-li-lk" style="display:none;margin-bottom:12px">
+          <div style="font-size:12px;color:var(--accent3);margin-bottom:4px" id="st-li-lk-txt"></div>
+          <div class="lk-bar"><div class="lk-fill" id="st-li-lk-fill" style="width:100%"></div></div>
+        </div>
+        <div class="fg"><label>Email</label><div class="iw"><input type="email" id="s-email" placeholder="your@email.com" autocomplete="username" spellcheck="false"></div></div>
+        <div class="fg"><label>Password</label><div class="iw">
+          <input type="password" id="s-pass" placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="eye" onclick="te('s-pass',this)" tabindex="-1">👁</button>
+        </div></div>
+        <button class="btn btn-y w-full" id="s-li-btn" onclick="studentLogin()" style="margin-top:.4rem">Sign In</button>
+        <div class="sec-note"><span class="sec-dot"></span>Passwords are SHA-256 hashed — never readable</div>
+      </div>
+      <!-- REGISTER -->
+      <div id="st-rg" style="display:none">
+        <div class="alert err" id="st-rg-alert"></div>
+        <div class="fr">
+          <div class="fg"><label>First name</label><div class="iw"><input type="text" id="s-first" placeholder="John" autocomplete="given-name"></div></div>
+          <div class="fg"><label>Last name</label><div class="iw"><input type="text" id="s-last" placeholder="Doe" autocomplete="family-name"></div></div>
+        </div>
+        <div class="fg"><label>Email</label><div class="iw"><input type="email" id="s-reg-email" placeholder="your@email.com" autocomplete="email" spellcheck="false"></div></div>
+        <div class="fg"><label>Password <span style="color:var(--muted);font-size:11px;text-transform:none;letter-spacing:0">(min 8 chars)</span></label><div class="iw">
+          <input type="password" id="s-reg-pass" placeholder="••••••••" autocomplete="new-password">
+          <button type="button" class="eye" onclick="te('s-reg-pass',this)" tabindex="-1">👁</button>
+        </div></div>
+        <div class="fg"><label>Confirm password</label><div class="iw">
+          <input type="password" id="s-reg-pass2" placeholder="••••••••" autocomplete="new-password">
+          <button type="button" class="eye" onclick="te('s-reg-pass2',this)" tabindex="-1">👁</button>
+        </div></div>
+        <button class="btn btn-y w-full" id="s-rg-btn" onclick="studentRegister()" style="margin-top:.4rem">Create Account</button>
+        <div class="sec-note"><span class="sec-dot"></span>Stored in browser with SHA-256 + unique salt</div>
+      </div>
+      <div style="margin-top:1.5rem;text-align:center"><button class="btn btn-ghost btn-sm" onclick="SS('landing')">← Back to home</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ADMIN AUTH ══════════ -->
+<div id="auth-admin" class="screen">
+  <nav>
+    <div class="logo">Mind<span>Sprint</span></div>
+    <div class="nav-r">
+      <button class="btn btn-ghost btn-sm" onclick="SS('landing')">← Home</button>
+      <button class="btn btn-ghost btn-sm" onclick="goAuth('student')">Student Portal</button>
+    </div>
+  </nav>
+  <div class="auth-wrap" style="background-image:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(71,180,255,.06) 0%,transparent 70%)">
+    <div class="auth-card admin-card">
+      <div class="admin-badge">🔐 Admin Access</div>
+      <h2>Admin Portal</h2>
+      <div class="auth-sub">Sign in or register as an administrator.</div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="a-li-tab" onclick="switchAdminTab('li')">Log In</button>
+        <button class="auth-tab" id="a-rg-tab" onclick="switchAdminTab('rg')">Register</button>
+      </div>
+      <!-- ADMIN LOGIN -->
+      <div id="a-li">
+        <div class="alert err" id="a-li-alert"></div>
+        <div id="a-li-lk" style="display:none;margin-bottom:12px">
+          <div style="font-size:12px;color:var(--accent3);margin-bottom:4px" id="a-li-lk-txt"></div>
+          <div class="lk-bar"><div class="lk-fill" id="a-li-lk-fill" style="width:100%"></div></div>
+        </div>
+        <div class="fg"><label>Admin Email</label><div class="iw"><input type="email" id="a-email" placeholder="admin@example.com" autocomplete="username" spellcheck="false"></div></div>
+        <div class="fg"><label>Password</label><div class="iw">
+          <input type="password" id="a-pass" placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="eye" onclick="te('a-pass',this)" tabindex="-1">👁</button>
+        </div></div>
+        <button class="btn btn-b w-full" id="a-li-btn" onclick="adminLogin()" style="margin-top:.4rem">Access Admin Panel</button>
+        <div class="sec-note"><span class="sec-dot"></span>Admin credentials hashed with SHA-256 + salt</div>
+      </div>
+      <!-- ADMIN REGISTER -->
+      <div id="a-rg" style="display:none">
+        <div class="alert err" id="a-rg-alert"></div>
+        <div class="fr">
+          <div class="fg"><label>First name</label><div class="iw"><input type="text" id="a-first" placeholder="Admin" autocomplete="given-name"></div></div>
+          <div class="fg"><label>Last name</label><div class="iw"><input type="text" id="a-last" placeholder="User" autocomplete="family-name"></div></div>
+        </div>
+        <div class="fg"><label>Email</label><div class="iw"><input type="email" id="a-reg-email" placeholder="admin@example.com" autocomplete="email" spellcheck="false"></div></div>
+        <div class="fg"><label>Password</label><div class="iw">
+          <input type="password" id="a-reg-pass" placeholder="••••••••" autocomplete="new-password">
+          <button type="button" class="eye" onclick="te('a-reg-pass',this)" tabindex="-1">👁</button>
+        </div></div>
+        <div class="fg"><label>Confirm password</label><div class="iw">
+          <input type="password" id="a-reg-pass2" placeholder="••••••••" autocomplete="new-password">
+          <button type="button" class="eye" onclick="te('a-reg-pass2',this)" tabindex="-1">👁</button>
+        </div></div>
+        <div class="fg">
+          <label>Admin Access Key <span style="color:var(--accent3);font-size:11px;text-transform:none;letter-spacing:0">— required</span></label>
+          <div class="iw">
+            <input type="password" id="a-key" placeholder="Enter admin key" autocomplete="off">
+            <button type="button" class="eye" onclick="te('a-key',this)" tabindex="-1">👁</button>
+          </div>
+        </div>
+        <button class="btn btn-b w-full" id="a-rg-btn" onclick="adminRegister()" style="margin-top:.4rem">Create Admin Account</button>
+        <div class="sec-note"><span class="sec-dot"></span>Key is hash-verified — never stored in plain text</div>
+      </div>
+      <div style="margin-top:1.5rem;text-align:center"><button class="btn btn-ghost btn-sm" onclick="SS('landing')">← Back to home</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ STUDENT DASHBOARD ══════════ -->
+<div id="student-dash" class="screen">
+  <nav>
+    <div class="logo">Mind<span>Sprint</span></div>
+    <div class="nav-r">
+      <span class="nav-user" id="s-nav-name"></span>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <div class="dash">
+    <div class="page-title" id="s-greet">Hello!</div>
+    <div class="page-sub">Ready to test your knowledge today?</div>
+    <div class="metrics">
+      <div class="mc y"><div class="mc-lbl">Quizzes Taken</div><div class="mc-val" id="s-taken">0</div></div>
+      <div class="mc g"><div class="mc-lbl">Best Score</div><div class="mc-val" id="s-best">—</div></div>
+      <div class="mc b"><div class="mc-lbl">Avg Score</div><div class="mc-val" id="s-avg">—</div></div>
+      <div class="mc r"><div class="mc-lbl">Your Rank</div><div class="mc-val" id="s-rank">#—</div></div>
+    </div>
+    <div class="sec-hd">Available Quizzes</div>
+    <div id="s-quizzes" class="qgrid"></div>
+    <div class="sec-hd" style="margin-top:2rem">Score History</div>
+    <div id="s-history"></div>
+    <div class="sec-hd" style="margin-top:2rem">Leaderboard</div>
+    <div id="s-lb"></div>
+  </div>
+</div>
+
+<!-- ══════════ ADMIN DASHBOARD ══════════ -->
+<div id="admin-dash" class="screen">
+  <nav>
+    <div class="logo">Mind<span>Sprint</span></div>
+    <div class="nav-r">
+      <span class="nav-user" id="a-nav-name"></span>
+      <span style="font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(71,180,255,.12);color:var(--accent2);font-weight:700">ADMIN</span>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <div class="dash">
+    <div class="page-title">Admin Dashboard</div>
+    <div class="page-sub">Manage quizzes, monitor students, view analytics.</div>
+    <div class="metrics">
+      <div class="mc y"><div class="mc-lbl">Total Quizzes</div><div class="mc-val" id="a-qcount">0</div></div>
+      <div class="mc b"><div class="mc-lbl">Students</div><div class="mc-val" id="a-scount">0</div></div>
+      <div class="mc g"><div class="mc-lbl">Attempts</div><div class="mc-val" id="a-acount">0</div></div>
+      <div class="mc r"><div class="mc-lbl">Avg Score</div><div class="mc-val" id="a-avg">—</div></div>
+    </div>
+    <div class="atabs">
+      <button class="atab active" onclick="aPanel('quizzes')">📝 Quizzes</button>
+      <button class="atab" onclick="aPanel('students')">👥 Students</button>
+      <button class="atab" onclick="aPanel('analytics')">📊 Analytics</button>
+      <button class="atab" onclick="aPanel('leaderboard')">🏆 Leaderboard</button>
+    </div>
+    <div class="apanel active" id="panel-quizzes">
+      <div class="sec-hd">Manage Quizzes <button class="btn btn-y btn-sm" onclick="openCreate()">+ New Quiz</button></div>
+      <div id="a-quiz-list"></div>
+    </div>
+    <div class="apanel" id="panel-students">
+      <div class="sec-hd">Registered Students</div>
+      <div id="a-student-list"></div>
+    </div>
+    <div class="apanel" id="panel-analytics">
+      <div class="sec-hd">Performance Analytics</div>
+      <div class="agrid">
+        <div class="cc"><h4>Score Distribution</h4><div style="position:relative;height:220px"><canvas id="scoreChart"></canvas></div></div>
+        <div class="cc"><h4>Attempts per Quiz</h4><div style="position:relative;height:220px"><canvas id="attChart"></canvas></div></div>
+      </div>
+    </div>
+    <div class="apanel" id="panel-leaderboard">
+      <div class="sec-hd">Global Leaderboard</div>
+      <div id="a-lb"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ QUIZ SCREEN ══════════ -->
+<div id="quiz-screen" class="screen">
+  <nav>
+    <div class="logo">Mind<span>Sprint</span></div>
+    <div class="nav-r"><button class="btn btn-red btn-sm" onclick="confirmQuit()">Quit Quiz</button></div>
+  </nav>
+  <div class="qcontent">
+    <div class="qhdr">
+      <div class="qhdr-info"><h2 id="q-title">Quiz</h2><p id="q-prog">Question 1 of 10</p></div>
+      <div class="timer" id="q-timer">⏱ 00:00</div>
+    </div>
+    <div class="pbar"><div class="pfill" id="q-pfill" style="width:10%"></div></div>
+    <div class="qbox">
+      <div class="qnum" id="q-num">Question 1</div>
+      <div class="qtxt" id="q-txt"></div>
+      <div class="opts" id="q-opts"></div>
+    </div>
+    <div class="qnav">
+      <button class="btn btn-ghost" id="q-prev" onclick="prevQ()">← Previous</button>
+      <button class="btn btn-y" id="q-next" onclick="nextQ()">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ RESULTS ══════════ -->
+<div id="results-screen" class="screen">
+  <nav>
+    <div class="logo">Mind<span>Sprint</span></div>
+    <div class="nav-r"><button class="btn btn-ghost btn-sm" onclick="goToDash()">← Dashboard</button></div>
+  </nav>
+  <div class="res-box">
+    <div class="score-ring" id="r-ring"><div class="score-pct" id="r-pct">0%</div><div class="score-lbl">SCORE</div></div>
+    <div class="res-title" id="r-grade">Great job!</div>
+    <div class="res-sub" id="r-sub"></div>
+    <div class="res-grid">
+      <div class="rs"><div class="rs-lbl">Correct</div><div class="rs-val" id="r-correct">0</div></div>
+      <div class="rs"><div class="rs-lbl">Total Questions</div><div class="rs-val" id="r-total">0</div></div>
+      <div class="rs"><div class="rs-lbl">Time Taken</div><div class="rs-val" id="r-time">—</div></div>
+      <div class="rs"><div class="rs-lbl">Quiz</div><div class="rs-val" id="r-quiz" style="font-size:1rem">—</div></div>
+    </div>
+    <div id="r-review" style="margin-bottom:1.5rem;text-align:left"></div>
+    <div style="display:flex;gap:10px;justify-content:center"><button class="btn btn-y" onclick="goToDash()">Back to Dashboard</button></div>
+  </div>
+</div>
+
+<!-- ══════════ QUIZ MODAL ══════════ -->
+<div class="modal-ov" id="quiz-modal">
+  <div class="modal">
+    <h3 id="m-title-hd">Create New Quiz</h3>
+    <div class="fr">
+      <div class="fg"><label>Title</label><input type="text" id="m-title" placeholder="e.g. World Geography" class="fi"></div>
+      <div class="fg"><label>Category</label><input type="text" id="m-cat" placeholder="e.g. Science" class="fi"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Time Limit (min)</label><input type="number" id="m-time" value="10" min="1" max="120" class="fi"></div>
+      <div class="fg"><label>Difficulty</label><select id="m-diff" class="fs"><option value="Easy">Easy</option><option value="Medium" selected>Medium</option><option value="Hard">Hard</option></select></div>
+    </div>
+    <div class="fg"><label>Description</label><textarea id="m-desc" placeholder="Brief description..." class="fta"></textarea></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <strong style="font-size:14px">Questions (MCQ only)</strong>
+      <button class="btn btn-ghost btn-sm" onclick="addQB()">+ Add Question</button>
+    </div>
+    <div id="qbuilder"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-y" onclick="saveQuiz()">Save Quiz</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  SECURITY — SHA-256 + salt (Web Crypto API)
+// ══════════════════════════════════════════════════
+function genSalt(){const a=new Uint8Array(16);crypto.getRandomValues(a);return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('')}
+async function sha256(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function hashPwd(pwd){const salt=genSalt();const hash=await sha256(salt+'::'+pwd+'::'+salt);return{hash,salt}}
+async function verifyPwd(pwd,h,s){return(await sha256(s+'::'+pwd+'::'+s))===h}
+// Admin key (never stored plain — only hash-compared at runtime)
+// The admin key is: QF-ADMIN-2025
+let _AKH=null;
+async function getAKH(){if(!_AKH)_AKH=await sha256('QF-ADMIN-2025');return _AKH}
+async function verifyAK(k){return(await sha256(k))===await getAKH()}
+
+// ══════════════════════════════════════════════════
+//  DATABASE — encrypted localStorage
+//  Passwords are never stored in plain text.
+//  All sensitive data uses hashed credentials.
+// ══════════════════════════════════════════════════
+const DB={
+  K:{U:'ms_users',Q:'ms_quizzes',A:'ms_attempts',L:'ms_locks'},
+  g(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch{return[]}},
+  go(k){try{return JSON.parse(localStorage.getItem(k))||{};}catch{return{}}},
+  s(k,v){localStorage.setItem(k,JSON.stringify(v))},
+  users(){return this.g(this.K.U)},
+  saveUsers(u){this.s(this.K.U,u)},
+  findUser(e){return this.users().find(u=>u.email.toLowerCase()===e.toLowerCase())},
+  addUser(u){const a=this.users();a.push(u);this.saveUsers(a)},
+  quizzes(){return this.g(this.K.Q)},
+  saveQuizzes(q){this.s(this.K.Q,q)},
+  attempts(){return this.g(this.K.A)},
+  addAttempt(a){const arr=this.attempts();arr.push(a);this.s(this.K.A,arr)},
+  lock(e){const m=this.go(this.K.L);return m[e.toLowerCase()]||{f:0,u:0}},
+  failLogin(e){
+    const m=this.go(this.K.L);const k=e.toLowerCase();
+    if(!m[k])m[k]={f:0,u:0};m[k].f++;
+    if(m[k].f>=5){m[k].u=Date.now()+30000;m[k].f=0;}
+    this.s(this.K.L,m);return m[k];
+  },
+  clearLock(e){const m=this.go(this.K.L);delete m[e.toLowerCase()];this.s(this.K.L,m)}
+};
+
+// Seed demo quizzes if first run
+(function(){
+  if(DB.quizzes().length>0)return;
+  DB.saveQuizzes([
+    {id:'q1',title:'General Knowledge',category:'General',time:5,difficulty:'Easy',desc:'Classic general knowledge questions to warm up your mind.',createdAt:Date.now(),questions:[
+      {text:'What is the capital of France?',options:['Berlin','Madrid','Paris','Rome'],correct:2},
+      {text:'Which planet is known as the Red Planet?',options:['Venus','Mars','Jupiter','Saturn'],correct:1},
+      {text:'Who painted the Mona Lisa?',options:['Picasso','Monet','Da Vinci','Raphael'],correct:2},
+      {text:'What is the largest ocean on Earth?',options:['Atlantic','Indian','Arctic','Pacific'],correct:3},
+      {text:'How many sides does a hexagon have?',options:['5','6','7','8'],correct:1},
+    ]},
+    {id:'q2',title:'Mathematics Challenge',category:'Math',time:8,difficulty:'Medium',desc:'Put your math skills to the test with these tricky problems.',createdAt:Date.now(),questions:[
+      {text:'What is π to 2 decimal places?',options:['3.12','3.14','3.16','3.18'],correct:1},
+      {text:'What is 15% of 200?',options:['20','25','30','35'],correct:2},
+      {text:'What is the square root of 144?',options:['10','11','12','13'],correct:2},
+      {text:'What is 7 × 8?',options:['54','56','58','64'],correct:1},
+    ]},
+    {id:'q3',title:'World History',category:'History',time:10,difficulty:'Hard',desc:'Test your knowledge of events that shaped civilisation.',createdAt:Date.now(),questions:[
+      {text:'In which year did World War II end?',options:['1943','1944','1945','1946'],correct:2},
+      {text:'Which empire built the Colosseum?',options:['Greek','Ottoman','Roman','Persian'],correct:2},
+      {text:'Who was the first US President?',options:['Lincoln','Jefferson','Adams','Washington'],correct:3},
+    ]},
+  ]);
+})();
+
+// ══════════════════════════════════════════════════
+//  APP STATE
+// ══════════════════════════════════════════════════
+let CU=null,AQ=null,QS={},TIV=null,LIV=null,EID=null,QID=0,SC=null,AC=null;
+
+// ══════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════
+function SS(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function goAuth(role){SS(role==='admin'?'auth-admin':'auth-student')}
+function switchStudentTab(t){
+  document.getElementById('st-li').style.display=t==='li'?'block':'none';
+  document.getElementById('st-rg').style.display=t==='rg'?'block':'none';
+  document.getElementById('st-li-tab').classList.toggle('active',t==='li');
+  document.getElementById('st-rg-tab').classList.toggle('active',t==='rg');
+  clr('st-li-alert');clr('st-rg-alert');
+}
+function switchAdminTab(t){
+  document.getElementById('a-li').style.display=t==='li'?'block':'none';
+  document.getElementById('a-rg').style.display=t==='rg'?'block':'none';
+  document.getElementById('a-li-tab').classList.toggle('active',t==='li');
+  document.getElementById('a-rg-tab').classList.toggle('active',t==='rg');
+  clr('a-li-alert');clr('a-rg-alert');
+}
+function te(id,btn){const e=document.getElementById(id);e.type=e.type==='password'?'text':'password';btn.textContent=e.type==='password'?'👁':'🙈'}
+function showAlert(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg;e.classList.add('show')}}
+function clr(id){const e=document.getElementById(id);if(e){e.textContent='';e.classList.remove('show')}}
+function logout(){CU=null;clearTimer();if(LIV){clearInterval(LIV);LIV=null;}SS('landing');toast('Logged out successfully.','ok')}
+function goToDash(){clearTimer();CU?.role==='admin'?renderAdmin():renderStudent()}
+
+function startLockUI(until,wrapId,txtId,fillId,btnId){
+  document.getElementById(btnId).disabled=true;
+  document.getElementById(wrapId).style.display='block';
+  if(LIV)clearInterval(LIV);
+  LIV=setInterval(()=>{
+    const left=Math.max(0,Math.ceil((until-Date.now())/1000));
+    document.getElementById(txtId).textContent=`Account locked — try again in ${left}s`;
+    document.getElementById(fillId).style.width=(left/30*100)+'%';
+    if(left<=0){clearInterval(LIV);LIV=null;document.getElementById(btnId).disabled=false;document.getElementById(wrapId).style.display='none';}
+  },200);
+}
+
+// ══════════════════════════════════════════════════
+//  STUDENT AUTH
+// ══════════════════════════════════════════════════
+async function studentLogin(){
+  clr('st-li-alert');
+  const email=document.getElementById('s-email').value.trim();
+  const pass=document.getElementById('s-pass').value;
+  if(!email||!pass){showAlert('st-li-alert','Please enter your email and password.');return}
+  const lk=DB.lock(email);
+  if(lk.u&&Date.now()<lk.u){showAlert('st-li-alert',`Too many attempts. Try again in ${Math.ceil((lk.u-Date.now())/1000)}s.`);startLockUI(lk.u,'st-li-lk','st-li-lk-txt','st-li-lk-fill','s-li-btn');return}
+  const btn=document.getElementById('s-li-btn');btn.disabled=true;btn.textContent='Signing in…';
+  const user=DB.findUser(email);
+  const ok=user&&user.role==='student'&&await verifyPwd(pass,user.hash,user.salt);
+  if(!ok){
+    const info=DB.failLogin(email);btn.disabled=false;btn.textContent='Sign In';
+    if(info.u&&Date.now()<info.u){showAlert('st-li-alert','Too many failed attempts. Locked for 30 seconds.');startLockUI(info.u,'st-li-lk','st-li-lk-txt','st-li-lk-fill','s-li-btn');}
+    else{const r=5-info.f;showAlert('st-li-alert','Incorrect email or password.'+(r<=2?` (${r} attempt${r===1?'':'s'} left)`:''));}
+    return;
+  }
+  DB.clearLock(email);btn.disabled=false;btn.textContent='Sign In';
+  CU={id:user.id,name:user.name,email:user.email,role:'student'};
+  toast('Welcome back, '+user.name.split(' ')[0]+'!','ok');renderStudent();
+}
+
+async function studentRegister(){
+  clr('st-rg-alert');
+  const first=document.getElementById('s-first').value.trim();
+  const last=document.getElementById('s-last').value.trim();
+  const email=document.getElementById('s-reg-email').value.trim();
+  const pass=document.getElementById('s-reg-pass').value;
+  const pass2=document.getElementById('s-reg-pass2').value;
+  if(!first||!last||!email||!pass||!pass2){showAlert('st-rg-alert','Please fill in all fields.');return}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showAlert('st-rg-alert','Enter a valid email address.');return}
+  if(pass.length<8){showAlert('st-rg-alert','Password must be at least 8 characters.');return}
+  if(pass!==pass2){showAlert('st-rg-alert','Passwords do not match.');return}
+  if(DB.findUser(email)){showAlert('st-rg-alert','An account with this email already exists.');return}
+  const btn=document.getElementById('s-rg-btn');btn.disabled=true;btn.textContent='Creating…';
+  const{hash,salt}=await hashPwd(pass);
+  const user={id:'u_'+Date.now(),name:first+' '+last,email:email.toLowerCase(),hash,salt,role:'student',createdAt:Date.now()};
+  DB.addUser(user);
+  btn.disabled=false;btn.textContent='Create Account';
+  CU={id:user.id,name:user.name,email:user.email,role:'student'};
+  toast('Account created! Welcome, '+first+'!','ok');renderStudent();
+}
+
+// ══════════════════════════════════════════════════
+//  ADMIN AUTH
+// ══════════════════════════════════════════════════
+async function adminLogin(){
+  clr('a-li-alert');
+  const email=document.getElementById('a-email').value.trim();
+  const pass=document.getElementById('a-pass').value;
+  if(!email||!pass){showAlert('a-li-alert','Please enter your email and password.');return}
+  const lk=DB.lock(email);
+  if(lk.u&&Date.now()<lk.u){showAlert('a-li-alert',`Too many attempts. Try again in ${Math.ceil((lk.u-Date.now())/1000)}s.`);startLockUI(lk.u,'a-li-lk','a-li-lk-txt','a-li-lk-fill','a-li-btn');return}
+  const btn=document.getElementById('a-li-btn');btn.disabled=true;btn.textContent='Verifying…';
+  const user=DB.findUser(email);
+  const ok=user&&user.role==='admin'&&await verifyPwd(pass,user.hash,user.salt);
+  if(!ok){
+    const info=DB.failLogin(email);btn.disabled=false;btn.textContent='Access Admin Panel';
+    if(info.u&&Date.now()<info.u){showAlert('a-li-alert','Too many failed attempts. Locked for 30 seconds.');startLockUI(info.u,'a-li-lk','a-li-lk-txt','a-li-lk-fill','a-li-btn');}
+    else{const r=5-info.f;showAlert('a-li-alert','Incorrect credentials.'+(r<=2?` (${r} attempt${r===1?'':'s'} left)`:''));}
+    return;
+  }
+  DB.clearLock(email);btn.disabled=false;btn.textContent='Access Admin Panel';
+  CU={id:user.id,name:user.name,email:user.email,role:'admin'};
+  toast('Welcome, '+user.name.split(' ')[0]+'!','ok');renderAdmin();
+}
+
+async function adminRegister(){
+  clr('a-rg-alert');
+  const first=document.getElementById('a-first').value.trim();
+  const last=document.getElementById('a-last').value.trim();
+  const email=document.getElementById('a-reg-email').value.trim();
+  const pass=document.getElementById('a-reg-pass').value;
+  const pass2=document.getElementById('a-reg-pass2').value;
+  const key=document.getElementById('a-key').value;
+  if(!first||!last||!email||!pass||!pass2){showAlert('a-rg-alert','Please fill in all fields.');return}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showAlert('a-rg-alert','Enter a valid email address.');return}
+  if(pass.length<8){showAlert('a-rg-alert','Password must be at least 8 characters.');return}
+  if(pass!==pass2){showAlert('a-rg-alert','Passwords do not match.');return}
+  if(DB.findUser(email)){showAlert('a-rg-alert','An account with this email already exists.');return}
+  if(!key){showAlert('a-rg-alert','Admin access key is required.');return}
+  const btn=document.getElementById('a-rg-btn');btn.disabled=true;btn.textContent='Verifying key…';
+  const keyOk=await verifyAK(key);
+  if(!keyOk){btn.disabled=false;btn.textContent='Create Admin Account';showAlert('a-rg-alert','Invalid admin access key.');return}
+  const{hash,salt}=await hashPwd(pass);
+  const user={id:'u_'+Date.now(),name:first+' '+last,email:email.toLowerCase(),hash,salt,role:'admin',createdAt:Date.now()};
+  DB.addUser(user);
+  btn.disabled=false;btn.textContent='Create Admin Account';
+  CU={id:user.id,name:user.name,email:user.email,role:'admin'};
+  toast('Admin account created!','ok');renderAdmin();
+}
+
+// ══════════════════════════════════════════════════
+//  STUDENT DASHBOARD
+// ══════════════════════════════════════════════════
+function renderStudent(){
+  SS('student-dash');
+  const mine=DB.attempts().filter(a=>a.userId===CU.id);
+  const quizzes=DB.quizzes();
+  document.getElementById('s-nav-name').textContent=CU.name;
+  document.getElementById('s-greet').textContent='Hello, '+CU.name.split(' ')[0]+' 👋';
+  document.getElementById('s-taken').textContent=mine.length;
+  if(mine.length){
+    document.getElementById('s-best').textContent=Math.max(...mine.map(a=>a.score))+'%';
+    document.getElementById('s-avg').textContent=Math.round(mine.reduce((s,a)=>s+a.score,0)/mine.length)+'%';
+  }else{document.getElementById('s-best').textContent='—';document.getElementById('s-avg').textContent='—';}
+  const lb=buildLB();const ri=lb.findIndex(e=>e.userId===CU.id)+1;
+  document.getElementById('s-rank').textContent=ri>0?'#'+ri:'#—';
+  // Quizzes
+  const qc=document.getElementById('s-quizzes');
+  qc.innerHTML=!quizzes.length?'<div class="empty"><div class="ei">📭</div><p>No quizzes available yet.</p></div>':quizzes.map(q=>{
+    const best=mine.filter(a=>a.quizId===q.id);const bs=best.length?Math.max(...best.map(a=>a.score)):null;
+    const dc=q.difficulty==='Easy'?'g':q.difficulty==='Hard'?'r':'d';
+    return`<div class="qcard" onclick="startQuiz('${q.id}')">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">${xss(q.category)}</div>
+      <div class="qcard-title">${xss(q.title)}</div>
+      <div class="qcard-desc">${xss(q.desc)}</div>
+      <div class="qcard-tags">
+        <span class="tag y">${q.questions.length} questions</span>
+        <span class="tag b">⏱ ${q.time} min</span>
+        <span class="tag ${dc}">${q.difficulty}</span>
+        ${bs!==null?`<span class="tag g">Best: ${bs}%</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  // History
+  const he=document.getElementById('s-history');
+  he.innerHTML=!mine.length?'<div class="empty"><div class="ei">📋</div><p>No attempts yet — take a quiz!</p></div>':[...mine].reverse().map(a=>{
+    const q=quizzes.find(x=>x.id===a.quizId);const c=a.score>=80?'var(--success)':a.score>=50?'var(--accent)':'var(--accent3)';
+    return`<div class="li"><div class="li-icon" style="background:${c}18">${a.score>=80?'🏆':a.score>=50?'✅':'❌'}</div>
+      <div class="li-info"><div class="li-name">${xss(q?.title||'Unknown')}</div><div class="li-sub">${new Date(a.date).toLocaleDateString()} · ${a.correct}/${a.total} correct</div></div>
+      <div class="li-score" style="color:${c}">${a.score}%</div></div>`;
+  }).join('');
+  renderLB('s-lb');
+}
+
+// ══════════════════════════════════════════════════
+//  QUIZ ENGINE
+// ══════════════════════════════════════════════════
+function startQuiz(qid){
+  const quiz=DB.quizzes().find(q=>q.id===qid);if(!quiz)return;AQ=quiz;
+  const shuffled=[...quiz.questions].sort(()=>Math.random()-.5);
+  QS={questions:shuffled,cur:0,answers:new Array(shuffled.length).fill(null),start:Date.now(),timeLeft:quiz.time*60};
+  SS('quiz-screen');renderQ();startTimer();
+}
+function renderQ(){
+  const{questions,cur,answers}=QS,q=questions[cur],total=questions.length;
+  document.getElementById('q-title').textContent=AQ.title;
+  document.getElementById('q-prog').textContent=`Question ${cur+1} of ${total}`;
+  document.getElementById('q-num').textContent=`QUESTION ${cur+1}`;
+  document.getElementById('q-txt').textContent=q.text;
+  document.getElementById('q-pfill').style.width=((cur+1)/total*100)+'%';
+  document.getElementById('q-prev').disabled=cur===0;
+  document.getElementById('q-next').textContent=cur===total-1?'Submit Quiz':'Next →';
+  const L=['A','B','C','D'];
+  document.getElementById('q-opts').innerHTML=q.options.map((o,i)=>`
+    <div class="opt ${answers[cur]===i?'sel':''}" onclick="selOpt(${i})">
+      <div class="opt-let">${L[i]}</div><span>${xss(o)}</span>
+    </div>`).join('');
+}
+function selOpt(i){QS.answers[QS.cur]=i;renderQ()}
+function nextQ(){QS.cur===QS.questions.length-1?submitQuiz():(QS.cur++,renderQ())}
+function prevQ(){if(QS.cur>0){QS.cur--;renderQ()}}
+function confirmQuit(){if(confirm('Quit this quiz? Progress will be lost.')){clearTimer();renderStudent()}}
+function submitQuiz(){
+  clearTimer();const{questions,answers,start}=QS;
+  let correct=0;questions.forEach((q,i)=>{if(answers[i]===q.correct)correct++;});
+  const score=Math.round(correct/questions.length*100),time=Math.round((Date.now()-start)/1000);
+  DB.addAttempt({userId:CU.id,quizId:AQ.id,score,correct,total:questions.length,time,date:Date.now()});
+  showResults(score,correct,questions.length,time,questions,answers);
+}
+function showResults(score,correct,total,time,questions,answers){
+  SS('results-screen');
+  document.getElementById('r-pct').textContent=score+'%';
+  document.getElementById('r-correct').textContent=correct;
+  document.getElementById('r-total').textContent=total;
+  document.getElementById('r-time').textContent=fmt(time);
+  document.getElementById('r-quiz').textContent=AQ.title;
+  const ring=document.getElementById('r-ring');ring.className='score-ring';
+  let grade,sub;
+  if(score>=90){ring.classList.add('ex');grade='🏆 Excellent!';sub='Outstanding performance!';}
+  else if(score>=70){ring.classList.add('gd');grade='✅ Well done!';sub='You scored really well!';}
+  else if(score>=50){ring.classList.add('av');grade='📚 Keep going!';sub='Review and try again.';}
+  else{ring.classList.add('po');grade='❌ Needs work';sub='Study the material and retry.';}
+  document.getElementById('r-grade').textContent=grade;
+  document.getElementById('r-sub').textContent=sub;
+  document.getElementById('r-review').innerHTML=`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">Answer Review</div>
+      ${questions.map((q,i)=>{const ok=answers[i]===q.correct;return`
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">${ok?'✅':'❌'}</span>
+          <div><div style="font-size:13px;font-weight:600">${xss(q.text)}</div>
+          ${!ok?`<div style="font-size:12px;color:var(--success);margin-top:3px">Correct: ${xss(q.options[q.correct])}</div>`:''}
+          ${answers[i]===null?`<div style="font-size:12px;color:var(--muted);margin-top:3px">Not answered</div>`:''}
+          </div>
+        </div>`;}).join('')}
+    </div>`;
+}
+function startTimer(){clearTimer();updTimer();TIV=setInterval(()=>{QS.timeLeft--;updTimer();if(QS.timeLeft<=0){clearTimer();submitQuiz();}},1000)}
+function updTimer(){const el=document.getElementById('q-timer');if(!el)return;const t=QS.timeLeft;el.textContent='⏱ '+fmt(t);el.className='timer'+(t<=30?' danger':t<=60?' warn':'')}
+function clearTimer(){if(TIV){clearInterval(TIV);TIV=null}}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+
+// ══════════════════════════════════════════════════
+//  ADMIN DASHBOARD
+// ══════════════════════════════════════════════════
+function renderAdmin(){
+  SS('admin-dash');
+  const users=DB.users(),quizzes=DB.quizzes(),attempts=DB.attempts();
+  const students=users.filter(u=>u.role==='student');
+  const avg=attempts.length?Math.round(attempts.reduce((s,a)=>s+a.score,0)/attempts.length):0;
+  document.getElementById('a-nav-name').textContent=CU.name;
+  document.getElementById('a-qcount').textContent=quizzes.length;
+  document.getElementById('a-scount').textContent=students.length;
+  document.getElementById('a-acount').textContent=attempts.length;
+  document.getElementById('a-avg').textContent=avg?avg+'%':'—';
+  renderAQuizList();renderAStudents();renderLB('a-lb');setTimeout(renderCharts,100);
+}
+function aPanel(t){
+  const tabs=['quizzes','students','analytics','leaderboard'];
+  document.querySelectorAll('.atab').forEach((el,i)=>el.classList.toggle('active',tabs[i]===t));
+  document.querySelectorAll('.apanel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='analytics')setTimeout(renderCharts,50);
+}
+function renderAQuizList(){
+  const quizzes=DB.quizzes(),attempts=DB.attempts(),el=document.getElementById('a-quiz-list');
+  if(!quizzes.length){el.innerHTML='<div class="empty"><div class="ei">📝</div><p>No quizzes yet.</p></div>';return}
+  el.innerHTML=quizzes.map(q=>{
+    const qa=attempts.filter(a=>a.quizId===q.id);const avg=qa.length?Math.round(qa.reduce((s,a)=>s+a.score,0)/qa.length):null;
+    return`<div class="qrow"><div class="qrow-info">
+      <div class="qrow-title">${xss(q.title)}</div>
+      <div class="qrow-meta">${q.questions.length} questions · ${q.time} min · ${q.difficulty} · ${qa.length} attempt(s)${avg!==null?' · Avg: '+avg+'%':''}</div>
+    </div><div class="qrow-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openEdit('${q.id}')">Edit</button>
+      <button class="btn btn-red btn-sm" onclick="deleteQuiz('${q.id}')">Delete</button>
+    </div></div>`;
+  }).join('');
+}
+function renderAStudents(){
+  const users=DB.users().filter(u=>u.role==='student'),attempts=DB.attempts(),el=document.getElementById('a-student-list');
+  if(!users.length){el.innerHTML='<div class="empty"><p>No students registered yet.</p></div>';return}
+  el.innerHTML=users.map(s=>{
+    const sa=attempts.filter(a=>a.userId===s.id);const avg=sa.length?Math.round(sa.reduce((sum,a)=>sum+a.score,0)/sa.length):null;
+    return`<div class="qrow"><div class="qrow-info">
+      <div class="qrow-title">${xss(s.name)}</div>
+      <div class="qrow-meta">${xss(s.email)} · ${sa.length} attempt(s)${avg!==null?' · Avg: '+avg+'%':' · No attempts'} · Joined ${new Date(s.createdAt).toLocaleDateString()}</div>
+    </div><span style="font-size:11px;padding:3px 10px;border-radius:100px;background:rgba(74,222,128,.12);color:var(--success);font-weight:700">Active</span></div>`;
+  }).join('');
+}
+function renderCharts(){
+  const attempts=DB.attempts(),quizzes=DB.quizzes();
+  const c1=document.getElementById('scoreChart');
+  if(c1){if(SC)SC.destroy();const cnts=[0,0,0,0,0];attempts.forEach(a=>{if(a.score<=20)cnts[0]++;else if(a.score<=40)cnts[1]++;else if(a.score<=60)cnts[2]++;else if(a.score<=80)cnts[3]++;else cnts[4]++;});
+    SC=new Chart(c1,{type:'bar',data:{labels:['0–20','21–40','41–60','61–80','81–100'],datasets:[{data:cnts,backgroundColor:'#e8ff4780',borderColor:'#e8ff47',borderWidth:1,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6d7a'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#6b6d7a',stepSize:1},grid:{color:'rgba(255,255,255,.04)'}}}}})}
+  const c2=document.getElementById('attChart');
+  if(c2){if(AC)AC.destroy();const labels=quizzes.map(q=>q.title.length>18?q.title.slice(0,16)+'…':q.title),data=quizzes.map(q=>attempts.filter(a=>a.quizId===q.id).length);
+    AC=new Chart(c2,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:['#e8ff4780','#47b4ff80','#ff6b6b80','#4ade8080','#fb923c80'],borderColor:['#e8ff47','#47b4ff','#ff6b6b','#4ade80','#fb923c'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#6b6d7a',font:{size:11}}}}}})}
+}
+
+// ══════════════════════════════════════════════════
+//  LEADERBOARD
+// ══════════════════════════════════════════════════
+function buildLB(){
+  const map={};DB.attempts().forEach(a=>{if(!map[a.userId]||a.score>map[a.userId].score)map[a.userId]={userId:a.userId,score:a.score,quizId:a.quizId}});
+  return Object.values(map).sort((a,b)=>b.score-a.score);
+}
+function renderLB(elId){
+  const el=document.getElementById(elId);if(!el)return;
+  const lb=buildLB(),users=DB.users(),quizzes=DB.quizzes(),rc=['gold','silver','bronze'];
+  if(!lb.length){el.innerHTML='<div class="empty"><div class="ei">🏆</div><p>No scores yet!</p></div>';return}
+  el.innerHTML=lb.slice(0,10).map((e,i)=>{
+    const user=users.find(u=>u.id===e.userId),quiz=quizzes.find(q=>q.id===e.quizId),me=CU&&e.userId===CU.id;
+    return`<div class="li" style="${me?'border-color:rgba(232,255,71,.4);background:rgba(232,255,71,.05);':''}">
+      <div class="rank ${rc[i]||''}">${i<3?['🥇','🥈','🥉'][i]:i+1}</div>
+      <div class="li-info"><div class="li-name">${xss(user?.name||'Unknown')} ${me?'<span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(74,222,128,.15);color:var(--success);font-weight:700">YOU</span>':''}</div>
+      <div class="li-sub">${xss(quiz?.title||'')}</div></div>
+      <div class="li-score">${e.score}%</div></div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+//  QUIZ CREATE / EDIT
+// ══════════════════════════════════════════════════
+function openCreate(){EID=null;QID=0;document.getElementById('m-title-hd').textContent='Create New Quiz';['m-title','m-cat','m-desc'].forEach(id=>document.getElementById(id).value='');document.getElementById('m-time').value='10';document.getElementById('m-diff').value='Medium';document.getElementById('qbuilder').innerHTML='';addQB();document.getElementById('quiz-modal').classList.add('open')}
+function openEdit(id){
+  const quiz=DB.quizzes().find(q=>q.id===id);if(!quiz)return;EID=id;QID=0;
+  document.getElementById('m-title-hd').textContent='Edit Quiz';document.getElementById('m-title').value=quiz.title;document.getElementById('m-cat').value=quiz.category;document.getElementById('m-time').value=quiz.time;document.getElementById('m-diff').value=quiz.difficulty;document.getElementById('m-desc').value=quiz.desc;
+  document.getElementById('qbuilder').innerHTML='';quiz.questions.forEach(q=>addQB(q));document.getElementById('quiz-modal').classList.add('open');
+}
+function closeModal(){document.getElementById('quiz-modal').classList.remove('open')}
+function addQB(ex=null){
+  const id=QID++,txt=ex?.text||'',cor=ex?.correct??0,ops=ex?.options||['','','',''];
+  const div=document.createElement('div');div.className='qb';div.id='qb-'+id;
+  div.innerHTML=`<div class="qbh"><span>MCQ ${id+1}</span><button class="btn btn-red btn-sm" onclick="document.getElementById('qb-${id}').remove()">Remove</button></div>
+    <div class="fg"><label>Question text</label><input type="text" class="fi" id="qbt-${id}" placeholder="Type your question..." value="${ea(txt)}"></div>
+    <div class="qb-opts">${ops.map((o,i)=>`<div class="qb-row"><input type="radio" name="cor-${id}" value="${i}" ${cor===i?'checked':''}><input type="text" class="qb-opt" id="qbo-${id}-${i}" placeholder="Option ${['A','B','C','D'][i]}" value="${ea(o)}"></div>`).join('')}</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px">Select the radio button next to the correct answer.</div>`;
+  document.getElementById('qbuilder').appendChild(div);
+}
+function saveQuiz(){
+  const title=document.getElementById('m-title').value.trim();const cat=document.getElementById('m-cat').value.trim();const time=parseInt(document.getElementById('m-time').value);const diff=document.getElementById('m-diff').value;const desc=document.getElementById('m-desc').value.trim();
+  if(!title){toast('Enter a quiz title.','err');return}
+  const qDivs=document.querySelectorAll('.qb');if(!qDivs.length){toast('Add at least one question.','err');return}
+  const questions=[];let valid=true;
+  qDivs.forEach(div=>{const n=parseInt(div.id.replace('qb-',''));const text=document.getElementById('qbt-'+n)?.value.trim();
+    if(!text){toast('All questions need text.','err');valid=false;return}
+    const opts=[0,1,2,3].map(i=>document.getElementById(`qbo-${n}-${i}`)?.value.trim()||'');
+    if(opts.some(o=>!o)){toast('Fill in all 4 options.','err');valid=false;return}
+    const sel=div.querySelector(`input[name="cor-${n}"]:checked`);
+    questions.push({text,options:opts,correct:sel?parseInt(sel.value):0});});
+  if(!valid)return;
+  const quizzes=DB.quizzes();
+  if(EID){const idx=quizzes.findIndex(q=>q.id===EID);quizzes[idx]={...quizzes[idx],title,category:cat,time,difficulty:diff,desc,questions};DB.saveQuizzes(quizzes);toast('Quiz updated!','ok');}
+  else{quizzes.push({id:'q_'+Date.now(),title,category:cat,time,difficulty:diff,desc,questions,createdAt:Date.now()});DB.saveQuizzes(quizzes);toast('Quiz created!','ok');}
+  closeModal();renderAdmin();
+}
+function deleteQuiz(id){if(!confirm('Delete this quiz? Cannot be undone.'))return;DB.saveQuizzes(DB.quizzes().filter(q=>q.id!==id));toast('Quiz deleted.','ok');renderAdmin()}
+
+// ══════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════
+function xss(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function ea(s){return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+let toastTm;
+function toast(msg,type='ok'){const el=document.getElementById('toast');el.textContent=(type==='ok'?'✓ ':'✕ ')+msg;el.className='show '+type;clearTimeout(toastTm);toastTm=setTimeout(()=>el.classList.remove('show'),3200)}
+
+// Enter key shortcuts
+document.getElementById('s-pass').addEventListener('keydown',e=>{if(e.key==='Enter')studentLogin()});
+document.getElementById('s-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('s-pass').focus()});
+document.getElementById('a-pass').addEventListener('keydown',e=>{if(e.key==='Enter')adminLogin()});
+document.getElementById('a-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('a-pass').focus()});
+</script>
+</body>
+</html>
